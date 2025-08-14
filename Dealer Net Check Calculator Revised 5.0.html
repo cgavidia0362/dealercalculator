@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dealer Net Check Calculator</title>
+  <style>
+    :root {
+      --bg:#0f172a; --panel:#111827; --muted:#94a3b8; --text:#e5e7eb; --accent:#3b82f6;
+      --cream:#fffbe6; --total:#d6e4ff; --border:#1f2937; --card:#0b1220;
+      --green1:#16a34a; --green2:#059669; --greenGlow: rgba(34,197,94,.4);
+      --greenSoft: rgba(34,197,94,.18);
+      --softAccent: rgba(59,130,246,.18);
+      --softAccentBorder:#22345c;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#0b1220,#0f172a);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:var(--text)}
+    .container{max-width:1200px;margin:34px auto;padding:0 16px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    h1{margin:0;font-size:1.6rem;letter-spacing:.2px}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+    .col-6{grid-column:span 6}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+    .section-title{font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin:4px 0 12px}
+    label{display:block;font-size:.88rem;color:var(--muted);margin:10px 0 6px}
+    .hint{font-size:.78rem;color:#9fb5e6;margin-left:8px}
+    input[type="text"]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #253044;background:#0b1220;color:var(--text)}
+    input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.25)}
+    .hr{height:1px;background:#1e2a44;margin:14px 0;border-radius:1px}
+    .auto{background:var(--cream);color:#0b1725;border-radius:8px;padding:6px 8px;display:inline-block;font-weight:600}
+    .total-badge{background:var(--total);color:#0b1725;border-radius:8px;padding:6px 8px;display:inline-block;font-weight:800}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid #22324c;background:#0b1220;color:#94a3b8}
+    .out{background:linear-gradient(180deg,#0b1220,#0b1426);border:1px solid #17213a;border-radius:16px;padding:14px}
+    .out h4{margin:0 0 6px;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+    .out .val{font-size:1.24rem;font-weight:800}
+
+    /* Subtle (no highlight) box for Total Hold */
+    .subtle{background:transparent;border:none;padding:6px 0;border-radius:0}
+    .subtle h4{color:#6b7b94;font-size:.78rem;margin-bottom:4px}
+    .subtle .val{font-size:1.05rem;font-weight:700;color:#cbd5e1}
+
+    /* Net Check highlight */
+    .big-total{
+      position:relative;
+      background: radial-gradient(600px 120px at 20% -20%, var(--greenGlow), transparent), #0b1220;
+      border: 2px solid #1f2e2a;
+      border-radius: 18px;
+      padding: 18px;
+      display:flex; justify-content:space-between; align-items:center;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35), 0 0 30px var(--greenGlow);
+      overflow:hidden;
+    }
+    .big-total::after{ content:''; position:absolute; inset:0; background: linear-gradient(90deg, rgba(34,197,94,.18), rgba(5,150,105,.05)); pointer-events:none; }
+    .badge{ position:absolute; top: -12px; right: 12px; background: linear-gradient(180deg, var(--green1), var(--green2)); color:#00170d; font-weight:900; letter-spacing:.06em; border-radius: 999px; padding: 6px 12px; border:1px solid rgba(255,255,255,.15); box-shadow:0 6px 16px var(--greenGlow); }
+    .big-total .label{color:#b7f7d3;text-transform:uppercase;letter-spacing:.12em;font-weight:800}
+    .big-total .value{font-size:1.8rem;font-weight:900;background:var(--total);color:#0b1725;border-radius:12px;padding:8px 12px}
+
+    /* Softer highlight for Total Amount to Finance (smaller than Net Check) */
+    .soft-total{
+      position:relative;
+      background: radial-gradient(600px 120px at 20% -40%, var(--softAccent), transparent), #0b1220;
+      border: 1px solid var(--softAccentBorder);
+      border-radius: 16px;
+      padding: 12px;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .soft-total .label{color:#c6d6ff;text-transform:uppercase;letter-spacing:.12em;font-weight:800}
+    .soft-total .value{font-size:1.35rem;font-weight:900;background:var(--total);color:#0b1725;border-radius:10px;padding:6px 10px}
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+    .primary{background:var(--accent);color:#001431}
+    .ghost{background:transparent;color:var(--text);border:1px solid #2a3a5b}
+
+    /* Collapsible sections */
+    details{background:#0c1323;border:1px solid #1b2946;border-radius:12px;padding:10px;margin-bottom:12px}
+    details>summary{list-style:none;cursor:pointer;font-weight:800;letter-spacing:.08em;color:#9fb5e6;display:flex;align-items:center;justify-content:space-between}
+    details>summary::-webkit-details-marker{display:none}
+    .caret{transition:transform .18s ease}
+    details[open] .caret{transform:rotate(90deg)}
+
+    @media (max-width: 960px){ .col-6{grid-column:span 12} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Dealer Net Check Calculator</h1>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="background:#0b1220;border:1px solid #23314c;padding:8px 10px;border-radius:999px;color:#94a3b8">Blue = inputs</span>
+        <span style="background:#0b1220;border:1px solid #23314c;padding:8px 10px;border-radius:999px;color:#94a3b8">Cream = auto-calc</span>
+        <span style="background:#0b1220;border:1px solid #23314c;padding:8px 10px;border-radius:999px;color:#94a3b8">Indigo = totals</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT COLUMN: Front End + Fees & Discount -->
+      <div class="col-6">
+        <div class="card">
+          <details open>
+            <summary>Front End <span class="caret">▶</span></summary>
+            <div class="hr"></div>
+            <label>Cash Price</label><input id="cashPrice" type="text" inputmode="decimal" placeholder="$18,999">
+            <label>Less (–) Down Payment</label><input id="downPayment" type="text" inputmode="decimal" placeholder="$3,000">
+            <label>Plus (+) Front-End Fees</label><input id="frontFees" type="text" inputmode="decimal" placeholder="$150">
+            <label>Plus (+) License</label><input id="license" type="text" inputmode="decimal" placeholder="$0">
+            <label>Plus (+) Tax</label><input id="tax" type="text" inputmode="decimal" placeholder="$1,214">
+            <label>Deductions (Trade-in)</label><input id="deductions" type="text" inputmode="decimal" placeholder="$0">
+            <label>Additions</label><input id="additions" type="text" inputmode="decimal" placeholder="$0">
+            <div class="hr"></div>
+            <div class="out"><h4>Amount Required (Calculated)</h4><div id="amountRequiredCalc" class="val auto" style="display:inline-block">$0.00</div></div>
+          </details>
+
+          <details open>
+            <summary>Fees & Discount <span class="caret">▶</span></summary>
+            <div class="hr"></div>
+            <label>Less Acquisition Fee</label><input id="acq" type="text" inputmode="decimal" placeholder="$175">
+            <label>Warranty Fee (Our Product) <span class="hint">(warranty cost + $150)</span></label>
+            <input id="warrantyFee" type="text" inputmode="decimal" placeholder="$0">
+            <label>Gap Fee (Only our product) <span class="hint">($624 Cost)</span></label>
+            <input id="gapFee" type="text" inputmode="decimal" placeholder="$0">
+            <label>GPS Fee</label><input id="gps" type="text" inputmode="decimal" placeholder="$0">
+            <label>Hold % (of Unpaid Amount)</label><input id="holdPct" type="text" inputmode="decimal" placeholder="12">
+            <label>Hold $ (fixed amount)</label><input id="holdFixed" type="text" inputmode="decimal" placeholder="$0">
+            <div class="hr"></div>
+            <!-- Total Hold: subtle, smaller, lighter -->
+            <div class="subtle">
+              <h4>Total Hold (calculated)</h4>
+              <div id="totalHold" class="val">$0.00</div>
+            </div>
+            <div style="height:8px"></div>
+            <div class="out"><h4>Total Contract Fees</h4><div id="totalContractFees" class="val auto" style="display:inline-block">$0.00</div></div>
+          </details>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Amount Required (Manual) + Backend + Totals -->
+      <div class="col-6">
+        <div class="card">
+          <details open>
+            <summary>Amount Required <span class="caret">▶</span></summary>
+            <div class="hr"></div>
+            <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
+              <label style="margin:0 8px 0 0">Use</label>
+              <select id="amountMode" class="pill">
+                <option value="calc">Calculated</option>
+                <option value="manual">Manual</option>
+              </select>
+            </div>
+            <label>Amount Required (Manual)</label>
+            <input id="amountRequiredManual" type="text" inputmode="decimal" placeholder="$0">
+            <div style="margin-top:6px;color:#9fb5e6;font-size:.9rem">Manual value: <span id="manualARDisplay" class="total-badge">$0.00</span></div>
+            <div class="hr"></div>
+            <div class="out"><h4>Unpaid Amount</h4><div id="unpaidAmount" class="val">$0.00</div></div>
+          </details>
+
+          <details open>
+            <summary>Backend Products <span class="caret">▶</span></summary>
+            <div class="hr"></div>
+            <label>+ GAP</label><input id="gap" type="text" inputmode="decimal" placeholder="$1,000">
+            <label>+ VSC</label><input id="vsc" type="text" inputmode="decimal" placeholder="$2,500">
+            <label>+ Other Backend (optional)</label><input id="otherBackend" type="text" inputmode="decimal" placeholder="$0">
+            <div class="hr"></div>
+            <div class="out"><h4>Total Backend</h4><div id="totalBackend" class="val auto" style="display:inline-block">$0.00</div></div>
+          </details>
+
+          <div class="soft-total" style="margin-top:12px">
+            <div class="label">Total Amount to Finance</div>
+            <div id="totalFinance" class="value">$0.00</div>
+          </div>
+
+          <div class="big-total" style="margin-top:14px">
+            <div class="badge">NET CHECK</div>
+            <div class="label">Net Check to Dealer</div>
+            <div id="netCheck" class="value">$0.00</div>
+          </div>
+
+          <div class="out" style="margin-top:12px">
+            <h4>Competing Bank Offer (optional)</h4>
+            <input id="compete" type="text" inputmode="decimal" placeholder="$0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+              <span class="section-title" style="margin:0">Difference</span>
+              <span id="difference" class="total-badge">$0.00</span>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="resetBtn">Reset Defaults</button>
+            <button class="ghost" id="copyBtn">Copy Summary</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const qs = (s)=>document.querySelector(s);
+    const money = (n)=> isFinite(n) ? n.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:2}) : '$0.00';
+    function parseMoney(v){
+      if(v==null) return 0;
+      const s = String(v).trim().replace(/[\,\s]/g,'');
+      if(!s) return 0;
+      if(s.endsWith('%')) return parseFloat(s)/100 || 0;
+      return parseFloat(s.replace(/[^0-9.-]/g,'')) || 0;
+    }
+    function parsePercent(v){
+      if(v==null) return 0;
+      const s = String(v).trim();
+      if(!s) return 0;
+      if(s.endsWith('%')) return (parseFloat(s) || 0) / 100;
+      const n = parseFloat(s.replace(/[^0-9.-]/g,'')) || 0;
+      if(n > 1) return n/100;
+      return n;
+    }
+
+    function setDefaults(){
+      qs('#cashPrice').value='$18,999'; qs('#downPayment').value='$3,000'; qs('#frontFees').value='$150'; qs('#license').value='$0';
+      qs('#tax').value='$1,214'; qs('#deductions').value='$0'; qs('#additions').value='$0';
+
+      qs('#amountRequiredManual').value=''; qs('#amountMode').value='calc'; qs('#manualARDisplay').textContent = '$0.00';
+
+      qs('#gap').value='$1,000'; qs('#vsc').value='$2,500'; qs('#otherBackend').value='$0';
+
+      qs('#acq').value='$175'; qs('#warrantyFee').value='$0'; qs('#gapFee').value='$0'; qs('#gps').value='$0';
+      qs('#holdPct').value='12'; qs('#holdFixed').value='$0';
+
+      qs('#compete').value='';
+      compute();
+    }
+  
+    function compute(){
+      const cashPrice=parseMoney(qs('#cashPrice').value), down=parseMoney(qs('#downPayment').value), fees=parseMoney(qs('#frontFees').value),
+            license=parseMoney(qs('#license').value), tax=parseMoney(qs('#tax').value), deduct=parseMoney(qs('#deductions').value), add=parseMoney(qs('#additions').value);
+      const amountCalc=cashPrice-down+fees+license+tax-deduct+add;
+      qs('#amountRequiredCalc').textContent= money(amountCalc);
+
+      const mode=qs('#amountMode').value;
+      const manualAR=parseMoney(qs('#amountRequiredManual').value);
+      qs('#manualARDisplay').textContent = money(manualAR);
+      if(manualAR > 0 && mode !== 'manual'){ qs('#amountMode').value = 'manual'; }
+
+      const useManual = (qs('#amountMode').value === 'manual') || (manualAR > 0 && amountCalc === 0);
+      const unpaidAmount = useManual ? manualAR : amountCalc;
+      qs('#unpaidAmount').textContent= money(unpaidAmount);
+
+      const gap=parseMoney(qs('#gap').value), vsc=parseMoney(qs('#vsc').value), otherB=parseMoney(qs('#otherBackend').value);
+      const totalBackend=gap+vsc+otherB; qs('#totalBackend').textContent= money(totalBackend);
+
+      const totalFinance = unpaidAmount + totalBackend;
+      qs('#totalFinance').textContent = money(totalFinance);
+
+      const acq=parseMoney(qs('#acq').value), warrantyFee=parseMoney(qs('#warrantyFee').value), gapFee=parseMoney(qs('#gapFee').value), gps=parseMoney(qs('#gps').value);
+      const holdPct=parsePercent(qs('#holdPct').value), holdFixed=parseMoney(qs('#holdFixed').value);
+      const totalHold=(unpaidAmount*holdPct)+holdFixed; qs('#totalHold').textContent= money(totalHold);
+
+      const totalContractFees = acq + warrantyFee + gapFee + totalHold; // excludes GPS
+      qs('#totalContractFees').textContent = money(totalContractFees);
+
+      const totalFees = acq + warrantyFee + gapFee + gps + totalHold;
+      const netCheck= unpaidAmount + totalBackend - totalFees;
+      qs('#netCheck').textContent = money(netCheck);
+
+      const comp=parseMoney(qs('#compete').value);
+      const diff=(comp? netCheck - comp : 0); qs('#difference').textContent = money(diff);
+    }
+
+    ['cashPrice','downPayment','frontFees','license','tax','deductions','additions','amountRequiredManual','amountMode','gap','vsc','otherBackend','acq','warrantyFee','gapFee','gps','holdPct','holdFixed','compete']
+      .forEach(id=>{ const el=document.getElementById(id); el.addEventListener('input', compute); if(id==='amountMode') el.addEventListener('change', compute); });
+
+    document.getElementById('resetBtn').addEventListener('click', setDefaults);
+    document.getElementById('copyBtn').addEventListener('click', ()=>{
+      const payload = {
+        unpaidAmount: qs('#unpaidAmount').textContent,
+        totalBackend: qs('#totalBackend').textContent,
+        totalFinance: qs('#totalFinance').textContent,
+        totalContractFees: qs('#totalContractFees').textContent,
+        netCheck: qs('#netCheck').textContent,
+      };
+      navigator.clipboard.writeText(`Summary\nUnpaid Amount: ${payload.unpaidAmount}\nTotal Backend: ${payload.totalBackend}\nTotal Amount to Finance: ${payload.totalFinance}\nTotal Contract Fees: ${payload.totalContractFees}\nNet Check: ${payload.netCheck}`).then(()=>{
+        document.getElementById('copyBtn').textContent='Copied!';
+        setTimeout(()=>document.getElementById('copyBtn').textContent='Copy Summary',1200);
+      });
+    });
+
+    setDefaults();
+  </script>
+
+<script>
+function resetToZero() {
+    document.querySelectorAll('input').forEach(el => {
+        if (el.type === 'number' || el.type === 'text') {
+            el.value = 0;
+        }
+    });
+    document.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0);
+    if (typeof calculate === 'function') calculate();
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const resetBtn = document.getElementById('resetBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', resetToZero);
+    }
+});
+</script>
+
+</body>
+</html>
+</html>
