@@ -9,7 +9,6 @@
       --bg:#0f172a; --panel:#111827; --muted:#94a3b8; --text:#e5e7eb; --accent:#3b82f6;
       --cream:#fffbe6; --total:#d6e4ff; --border:#1f2937; --card:#0b1220;
       --green1:#16a34a; --green2:#059669; --greenGlow: rgba(34,197,94,.4);
-      --greenSoft: rgba(34,197,94,.18);
       --softAccent: rgba(59,130,246,.18);
       --softAccentBorder:#22345c;
     }
@@ -120,7 +119,7 @@
             <label>Gap Fee (Only our product) <span class="hint">($624 Cost)</span></label>
             <input id="gapFee" type="text" inputmode="decimal" placeholder="$0">
             <label>GPS Fee</label><input id="gps" type="text" inputmode="decimal" placeholder="$0">
-            <label>Hold % (of Unpaid Amount)</label><input id="holdPct" type="text" inputmode="decimal" placeholder="12">
+            <label>Hold % (of Total Amount to Finance)</label><input id="holdPct" type="text" inputmode="decimal" placeholder="12">
             <label>Hold $ (fixed amount)</label><input id="holdFixed" type="text" inputmode="decimal" placeholder="$0">
             <div class="hr"></div>
             <!-- Total Hold: subtle, smaller, lighter -->
@@ -198,7 +197,7 @@
     const money = (n)=> isFinite(n) ? n.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:2}) : '$0.00';
     function parseMoney(v){
       if(v==null) return 0;
-      const s = String(v).trim().replace(/[\,\s]/g,'');
+      const s = String(v).trim().replace(/[\\,\\s]/g,'');
       if(!s) return 0;
       if(s.endsWith('%')) return parseFloat(s)/100 || 0;
       return parseFloat(s.replace(/[^0-9.-]/g,'')) || 0;
@@ -213,21 +212,15 @@
       return n;
     }
 
-    function setDefaults(){
-      qs('#cashPrice').value='$18,999'; qs('#downPayment').value='$3,000'; qs('#frontFees').value='$150'; qs('#license').value='$0';
-      qs('#tax').value='$1,214'; qs('#deductions').value='$0'; qs('#additions').value='$0';
-
-      qs('#amountRequiredManual').value=''; qs('#amountMode').value='calc'; qs('#manualARDisplay').textContent = '$0.00';
-
-      qs('#gap').value='$1,000'; qs('#vsc').value='$2,500'; qs('#otherBackend').value='$0';
-
-      qs('#acq').value='$175'; qs('#warrantyFee').value='$0'; qs('#gapFee').value='$0'; qs('#gps').value='$0';
-      qs('#holdPct').value='12'; qs('#holdFixed').value='$0';
-
-      qs('#compete').value='';
+    function setZeros(){
+      // Zero out all inputs and reset dropdown to Calculated
+      ['cashPrice','downPayment','frontFees','license','tax','deductions','additions',
+       'amountRequiredManual','gap','vsc','otherBackend','acq','warrantyFee','gapFee','gps','holdPct','holdFixed','compete']
+        .forEach(id => { const el = qs('#'+id); if(el) el.value = '0'; });
+      const mode = qs('#amountMode'); if(mode) mode.value = 'calc';
       compute();
     }
-  
+
     function compute(){
       const cashPrice=parseMoney(qs('#cashPrice').value), down=parseMoney(qs('#downPayment').value), fees=parseMoney(qs('#frontFees').value),
             license=parseMoney(qs('#license').value), tax=parseMoney(qs('#tax').value), deduct=parseMoney(qs('#deductions').value), add=parseMoney(qs('#additions').value);
@@ -246,28 +239,33 @@
       const gap=parseMoney(qs('#gap').value), vsc=parseMoney(qs('#vsc').value), otherB=parseMoney(qs('#otherBackend').value);
       const totalBackend=gap+vsc+otherB; qs('#totalBackend').textContent= money(totalBackend);
 
+      // Total Amount to Finance
       const totalFinance = unpaidAmount + totalBackend;
       qs('#totalFinance').textContent = money(totalFinance);
 
+      // Fees and Hold
       const acq=parseMoney(qs('#acq').value), warrantyFee=parseMoney(qs('#warrantyFee').value), gapFee=parseMoney(qs('#gapFee').value), gps=parseMoney(qs('#gps').value);
       const holdPct=parsePercent(qs('#holdPct').value), holdFixed=parseMoney(qs('#holdFixed').value);
-      const totalHold=(unpaidAmount*holdPct)+holdFixed; qs('#totalHold').textContent= money(totalHold);
+      // HOLD should be of the Total Amount to Finance
+      const totalHold=(totalFinance*holdPct)+holdFixed; qs('#totalHold').textContent= money(totalHold);
 
-      const totalContractFees = acq + warrantyFee + gapFee + totalHold; // excludes GPS
+      // Total Contract Fees (excludes GPS)
+      const totalContractFees = acq + warrantyFee + gapFee + gps + totalHold;
       qs('#totalContractFees').textContent = money(totalContractFees);
 
-      const totalFees = acq + warrantyFee + gapFee + gps + totalHold;
-      const netCheck= unpaidAmount + totalBackend - totalFees;
+      // Net Check = Total Amount to Finance - Total Contract Fees
+      const netCheck = totalFinance - totalContractFees;
       qs('#netCheck').textContent = money(netCheck);
 
       const comp=parseMoney(qs('#compete').value);
       const diff=(comp? netCheck - comp : 0); qs('#difference').textContent = money(diff);
     }
 
+    // Wire events
     ['cashPrice','downPayment','frontFees','license','tax','deductions','additions','amountRequiredManual','amountMode','gap','vsc','otherBackend','acq','warrantyFee','gapFee','gps','holdPct','holdFixed','compete']
       .forEach(id=>{ const el=document.getElementById(id); el.addEventListener('input', compute); if(id==='amountMode') el.addEventListener('change', compute); });
 
-    document.getElementById('resetBtn').addEventListener('click', setDefaults);
+    document.getElementById('resetBtn').addEventListener('click', setZeros);
     document.getElementById('copyBtn').addEventListener('click', ()=>{
       const payload = {
         unpaidAmount: qs('#unpaidAmount').textContent,
@@ -277,32 +275,15 @@
         netCheck: qs('#netCheck').textContent,
       };
       navigator.clipboard.writeText(`Summary\nUnpaid Amount: ${payload.unpaidAmount}\nTotal Backend: ${payload.totalBackend}\nTotal Amount to Finance: ${payload.totalFinance}\nTotal Contract Fees: ${payload.totalContractFees}\nNet Check: ${payload.netCheck}`).then(()=>{
-        document.getElementById('copyBtn').textContent='Copied!';
-        setTimeout(()=>document.getElementById('copyBtn').textContent='Copy Summary',1200);
+        const btn = document.getElementById('copyBtn');
+        const prev = btn.textContent;
+        btn.textContent='Copied!';
+        setTimeout(()=>btn.textContent=prev,1200);
       });
     });
 
-    setDefaults();
+    // Start with zeros so it's neutral on first load
+    setZeros();
   </script>
-
-<script>
-function resetToZero() {
-    document.querySelectorAll('input').forEach(el => {
-        if (el.type === 'number' || el.type === 'text') {
-            el.value = 0;
-        }
-    });
-    document.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0);
-    if (typeof calculate === 'function') calculate();
-}
-document.addEventListener('DOMContentLoaded', function() {
-    const resetBtn = document.getElementById('resetBtn');
-    if (resetBtn) {
-        resetBtn.addEventListener('click', resetToZero);
-    }
-});
-</script>
-
 </body>
-</html>
 </html>
