@@ -69,7 +69,7 @@
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
     button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
     .primary{background:var(--accent);color:#001431}
-    .ghost{background:transparent;color:var(--text);border:1px solid #2a3a5b}
+    .ghost{background:transparent;color:#fff;border:1px solid #2a3a5b}
 
     /* Collapsible sections */
     details{background:#0c1323;border:1px solid #1b2946;border-radius:12px;padding:10px;margin-bottom:12px}
@@ -93,9 +93,9 @@
     </header>
 
     <div class="grid">
-      <!-- LEFT COLUMN: Front End + Fees & Discount -->
+      <!-- LEFT COLUMN: Front End, then Amount Required -->
       <div class="col-6">
-        <div class="card">
+        <div class="card" style="margin-bottom:16px">
           <details open>
             <summary>Front End <span class="caret">▶</span></summary>
             <div class="hr"></div>
@@ -109,32 +109,8 @@
             <div class="hr"></div>
             <div class="out"><h4>Amount Required (Calculated)</h4><div id="amountRequiredCalc" class="val auto" style="display:inline-block">$0.00</div></div>
           </details>
-
-          <details open>
-            <summary>Fees & Discount <span class="caret">▶</span></summary>
-            <div class="hr"></div>
-            <label>Less Acquisition Fee</label><input id="acq" type="text" inputmode="decimal" placeholder="$175">
-            <label>Warranty Fee (Our Product) <span class="hint">(warranty cost + $150)</span></label>
-            <input id="warrantyFee" type="text" inputmode="decimal" placeholder="$0">
-            <label>Gap Fee (Only our product) <span class="hint">($624 Cost)</span></label>
-            <input id="gapFee" type="text" inputmode="decimal" placeholder="$0">
-            <label>GPS Fee</label><input id="gps" type="text" inputmode="decimal" placeholder="$0">
-            <label>Hold % (of Total Amount to Finance)</label><input id="holdPct" type="text" inputmode="decimal" placeholder="12">
-            <label>Hold $ (fixed amount)</label><input id="holdFixed" type="text" inputmode="decimal" placeholder="$0">
-            <div class="hr"></div>
-            <!-- Total Hold: subtle, smaller, lighter -->
-            <div class="subtle">
-              <h4>Total Hold (calculated)</h4>
-              <div id="totalHold" class="val">$0.00</div>
-            </div>
-            <div style="height:8px"></div>
-            <div class="out"><h4>Total Contract Fees</h4><div id="totalContractFees" class="val auto" style="display:inline-block">$0.00</div></div>
-          </details>
         </div>
-      </div>
 
-      <!-- RIGHT COLUMN: Amount Required (Manual) + Backend + Totals -->
-      <div class="col-6">
         <div class="card">
           <details open>
             <summary>Amount Required <span class="caret">▶</span></summary>
@@ -152,7 +128,12 @@
             <div class="hr"></div>
             <div class="out"><h4>Unpaid Amount</h4><div id="unpaidAmount" class="val">$0.00</div></div>
           </details>
+        </div>
+      </div>
 
+      <!-- RIGHT COLUMN: Backend Products, then Fees & Discount, then Totals -->
+      <div class="col-6">
+        <div class="card" style="margin-bottom:16px">
           <details open>
             <summary>Backend Products <span class="caret">▶</span></summary>
             <div class="hr"></div>
@@ -161,6 +142,28 @@
             <label>+ Other Backend (optional)</label><input id="otherBackend" type="text" inputmode="decimal" placeholder="$0">
             <div class="hr"></div>
             <div class="out"><h4>Total Backend</h4><div id="totalBackend" class="val auto" style="display:inline-block">$0.00</div></div>
+          </details>
+        </div>
+
+        <div class="card">
+          <details open>
+            <summary>Fees & Discount <span class="caret">▶</span></summary>
+            <div class="hr"></div>
+            <label>Less Acquisition Fee</label><input id="acq" type="text" inputmode="decimal" placeholder="$175">
+            <label>Warranty Fee (Our Product) <span class="hint">(warranty cost + $150)</span></label>
+            <input id="warrantyFee" type="text" inputmode="decimal" placeholder="$0">
+            <label>Gap Fee (Only our product) <span class="hint">($624 Cost)</span></label>
+            <input id="gapFee" type="text" inputmode="decimal" placeholder="$0">
+            <label>GPS Fee</label><input id="gps" type="text" inputmode="decimal" placeholder="$0">
+            <label>Hold % (of Total Amount to Finance)</label><input id="holdPct" type="text" inputmode="decimal" placeholder="12">
+            <label>Hold $ (fixed amount)</label><input id="holdFixed" type="text" inputmode="decimal" placeholder="$0">
+            <div class="hr"></div>
+            <div class="subtle">
+              <h4>Total Hold (calculated)</h4>
+              <div id="totalHold" class="val">$0.00</div>
+            </div>
+            <div style="height:8px"></div>
+            <div class="out"><h4>Total Contract Fees</h4><div id="totalContractFees" class="val auto" style="display:inline-block">$0.00</div></div>
           </details>
 
           <div class="soft-total" style="margin-top:12px">
@@ -213,7 +216,6 @@
     }
 
     function setZeros(){
-      // Zero out all inputs and reset dropdown to Calculated
       ['cashPrice','downPayment','frontFees','license','tax','deductions','additions',
        'amountRequiredManual','gap','vsc','otherBackend','acq','warrantyFee','gapFee','gps','holdPct','holdFixed','compete']
         .forEach(id => { const el = qs('#'+id); if(el) el.value = '0'; });
@@ -239,21 +241,16 @@
       const gap=parseMoney(qs('#gap').value), vsc=parseMoney(qs('#vsc').value), otherB=parseMoney(qs('#otherBackend').value);
       const totalBackend=gap+vsc+otherB; qs('#totalBackend').textContent= money(totalBackend);
 
-      // Total Amount to Finance
       const totalFinance = unpaidAmount + totalBackend;
       qs('#totalFinance').textContent = money(totalFinance);
 
-      // Fees and Hold
       const acq=parseMoney(qs('#acq').value), warrantyFee=parseMoney(qs('#warrantyFee').value), gapFee=parseMoney(qs('#gapFee').value), gps=parseMoney(qs('#gps').value);
       const holdPct=parsePercent(qs('#holdPct').value), holdFixed=parseMoney(qs('#holdFixed').value);
-      // HOLD should be of the Total Amount to Finance
       const totalHold=(totalFinance*holdPct)+holdFixed; qs('#totalHold').textContent= money(totalHold);
 
-      // Total Contract Fees (excludes GPS)
       const totalContractFees = acq + warrantyFee + gapFee + gps + totalHold;
       qs('#totalContractFees').textContent = money(totalContractFees);
 
-      // Net Check = Total Amount to Finance - Total Contract Fees
       const netCheck = totalFinance - totalContractFees;
       qs('#netCheck').textContent = money(netCheck);
 
@@ -261,7 +258,6 @@
       const diff=(comp? netCheck - comp : 0); qs('#difference').textContent = money(diff);
     }
 
-    // Wire events
     ['cashPrice','downPayment','frontFees','license','tax','deductions','additions','amountRequiredManual','amountMode','gap','vsc','otherBackend','acq','warrantyFee','gapFee','gps','holdPct','holdFixed','compete']
       .forEach(id=>{ const el=document.getElementById(id); el.addEventListener('input', compute); if(id==='amountMode') el.addEventListener('change', compute); });
 
@@ -282,7 +278,6 @@
       });
     });
 
-    // Start with zeros so it's neutral on first load
     setZeros();
   </script>
 </body>
