@@ -55,6 +55,10 @@ If something breaks:
   - Branch: `main` / folder `/ (root)`
 
 ---
+## Updates
+- 2025-08-15: Added GPS to Total Contract Fees calculation
+- 2025-08-15: Rearranged sections (Front End + Amount Required on left, Backend Products + Fees & Discount on right)
+- Removed old index-fixed-gps.html file
 
 **Author:** Chris Gavidia  
 **Hosting:** GitHub Pages
